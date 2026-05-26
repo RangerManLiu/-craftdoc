@@ -1,0 +1,209 @@
+/* CraftDoc v2 — Document Rendering Styles
+   Each .doc-* class is applied to the output card based on the chosen template.
+   We keep ~10 styles that cover the 30 templates by family. */
+
+/* ---------- Shared output card base ---------- */
+.output-card {
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 40px 48px;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    max-width: 860px;
+    margin: 0 auto;
+    line-height: 1.65;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    position: relative;
+    overflow-x: auto;
+}
+
+.output-card pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: inherit;
+    font-size: 15px;
+    margin: 0;
+}
+
+.output-card .watermark {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px dashed #d0d0d0;
+    font-size: 11px;
+    color: #b0b0b0;
+    text-align: center;
+    font-family: 'Inter', Arial, sans-serif;
+    font-style: italic;
+}
+
+/* ---------- 1. Essay (academic essays, applications, personal statement, LinkedIn) ---------- */
+.doc-essay {
+    font-family: 'Georgia', 'Times New Roman', serif;
+}
+.doc-essay pre {
+    text-align: justify;
+    text-indent: 0;
+}
+
+/* ---------- 2. Research paper (numbered, double-spaced look) ---------- */
+.doc-research {
+    font-family: 'Times New Roman', Times, serif;
+}
+.doc-research pre {
+    font-size: 14px;
+    line-height: 1.9;
+}
+
+/* ---------- 3. Generic report (lab, book, minutes, press release) ---------- */
+.doc-report {
+    font-family: 'Calibri', 'Helvetica Neue', Arial, sans-serif;
+    border-top: 4px solid #1E3A8A;
+}
+.doc-report pre {
+    font-size: 14.5px;
+}
+
+/* ---------- 4. Resume - Modern (left dark sidebar feel) ---------- */
+.doc-resume-modern {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    padding: 0;
+    overflow: hidden;
+}
+.doc-resume-modern pre {
+    background: linear-gradient(90deg, #1E3A8A 0 220px, #fff 220px);
+    color: #1a1a1a;
+    padding: 36px 40px 36px 240px;
+    font-size: 14.5px;
+    min-height: 600px;
+}
+.doc-resume-modern .watermark {
+    margin: 0 40px 16px 240px;
+}
+
+/* ---------- 5. Resume - Classic (centred title, traditional) ---------- */
+.doc-resume-classic {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    text-align: center;
+    border-top: 3px double #1E3A8A;
+    border-bottom: 3px double #1E3A8A;
+}
+.doc-resume-classic pre {
+    text-align: left;
+    font-size: 14.5px;
+    padding-top: 12px;
+}
+
+/* ---------- 6. Resume - Minimalist (lots of whitespace) ---------- */
+.doc-resume-minimalist {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    padding: 80px 100px;
+    letter-spacing: 0.2px;
+}
+.doc-resume-minimalist pre {
+    font-size: 14px;
+    line-height: 2;
+    color: #2a2a2a;
+}
+
+/* ---------- 7. Resume - Technical (terminal feel) ---------- */
+.doc-resume-technical {
+    background: #0d1117;
+    color: #d1d5db;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    border-left: 4px solid #10b981;
+}
+.doc-resume-technical pre {
+    color: #d1d5db;
+    font-size: 13.5px;
+}
+.doc-resume-technical .watermark {
+    color: #6b7280;
+    border-top-color: #374151;
+}
+
+/* ---------- 8. Resume - Executive (deep red accents, big numbers) ---------- */
+.doc-resume-executive {
+    font-family: 'Garamond', 'Georgia', serif;
+    border-top: 6px solid #991b1b;
+    background: #fffaf7;
+}
+.doc-resume-executive pre {
+    font-size: 15px;
+    color: #1a1a1a;
+}
+
+/* ---------- 9. Resume - Creative (colour blocks) ---------- */
+.doc-resume-creative {
+    font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #fff 0%, #fff 80%, #fef3c7 100%);
+    border-top: 8px solid #F59E0B;
+    border-right: 8px solid #1E3A8A;
+}
+.doc-resume-creative pre {
+    font-size: 14.5px;
+}
+
+/* ---------- 10. Resume - Academic CV (formal, multi-section) ---------- */
+.doc-resume-academic {
+    font-family: 'Times New Roman', Times, serif;
+}
+.doc-resume-academic pre {
+    font-size: 13.5px;
+    line-height: 1.7;
+}
+
+/* ---------- 11. Resume - Entry Level (warm and clean) ---------- */
+.doc-resume-entry {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    border-top: 4px solid #F59E0B;
+}
+.doc-resume-entry pre {
+    font-size: 14.5px;
+}
+
+/* ---------- 12. Cover letter (formal letter look) ---------- */
+.doc-letter {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    padding: 56px 64px;
+    background: #fefefe;
+}
+.doc-letter pre {
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* ---------- 13. Business proposal (formal corporate) ---------- */
+.doc-proposal {
+    font-family: 'Calibri', 'Helvetica Neue', Arial, sans-serif;
+    border-left: 6px solid #1E3A8A;
+    border-right: 6px solid #F59E0B;
+}
+.doc-proposal pre {
+    font-size: 14.5px;
+}
+
+/* ---------- 14. Business email (email-client look) ---------- */
+.doc-email {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    max-width: 680px;
+    border: 1px solid #e5e7eb;
+}
+.doc-email pre {
+    font-size: 14.5px;
+    line-height: 1.7;
+}
+
+/* ---------- Print friendliness ---------- */
+@media print {
+    body { background: #fff !important; }
+    .output-card { box-shadow: none; border: 1px solid #e5e7eb; }
+}
+
+/* ---------- Hidden printable container (used by exporter.js) ---------- */
+#__craftdoc_print__ {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 860px;
+    background: #fff;
+}

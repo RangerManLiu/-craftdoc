@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CraftDoc — From homework to job hunt, AI writes your perfect English document in 30 seconds</title>
+<meta name="description" content="CraftDoc — AI English document platform for students, job seekers and business. 30+ templates · No signup · No data stored · 100% Free during Beta.">
+<link rel="icon" type="image/x-icon" href="img/favicon.ico">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/templates.css">
+<!-- We mirror the template CSS in a hidden <script> so the exporter can inject it into print containers -->
+<script id="__tpl_css__" type="text/template">
+  /* Note: exporter.js reads this script's textContent to inline-style print containers.
+     Templates.css is the canonical source; if you want exporter to fully match on PDF, copy that file's contents here.
+     For now we leave it empty — html2canvas already inherits computed styles from the cloned node. */
+</script>
+</head>
+<body>
+
+<header class="site-header">
+    <a href="#" class="site-logo">
+        <img src="img/logo.png" alt="CraftDoc" onerror="this.src='img/logo.svg'">
+        <span>CraftDoc</span>
+    </a>
+    <nav class="site-nav">
+        <a class="nav-link" href="#builder">Builder</a>
+        <a class="nav-link" href="#features">Features</a>
+        <a class="nav-link" href="#pricing">Pricing</a>
+        <a class="nav-link" href="#contact">Contact</a>
+    </nav>
+</header>
+
+<main>
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+        <h1>From homework to job hunt — <br><span class="accent">AI writes your perfect English document in 30 seconds.</span></h1>
+        <p class="tagline">30+ templates · No signup · No data stored · <strong>100% Free during Beta</strong></p>
+        <p class="sub-tagline">Academic essays, resumes, cover letters, business proposals — all in one place.</p>
+    </section>
+
+    <!-- ============ BUILDER (4-Step Picker) ============ -->
+    <section id="builder" class="section">
+        <h2>🚀 Build Your Document</h2>
+        <p class="section-intro">Pick a category → pick a document → pick a template → paste your notes. That's it.</p>
+
+        <div class="steps">
+
+            <!-- Step 1 -->
+            <div class="step" id="step1">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Choose a category</div>
+                </div>
+                <div class="pick-grid" id="step1-options"></div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step disabled" id="step2">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Choose a document type</div>
+                </div>
+                <div class="pick-grid" id="step2-options"></div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step disabled" id="step3">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Choose a style template</div>
+                </div>
+                <div class="pick-grid" id="step3-options"></div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step" id="step4">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Paste your notes / requirements / draft</div>
+                </div>
+                <textarea id="user-input" placeholder="Paste anything: rough notes, bullet points, an existing draft, or a job description. The AI will turn it into a polished document. Min 10 chars, max 8000."></textarea>
+                <div class="input-meta"><span id="input-counter">0 / 8000</span></div>
+
+                <div class="action-row">
+                    <button id="btn-generate" class="btn btn-primary" disabled>✨ Generate</button>
+                    <button id="btn-polish"   class="btn btn-secondary" disabled>✨ Polish &amp; Correct</button>
+                    <button id="btn-format"   class="btn btn-tertiary"  disabled>📐 One-Click Format</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output -->
+        <div id="output-section" class="hidden">
+            <div class="output-header">
+                <h3>Your Document</h3>
+                <div class="export-row">
+                    <button id="btn-download-pdf"  class="btn btn-secondary" disabled>📄 Download PDF<br><small style="font-weight:400;font-size:11px;opacity:0.8;">For HR / submission</small></button>
+                    <button id="btn-download-word" class="btn btn-secondary" disabled>📝 Download Word<br><small style="font-weight:400;font-size:11px;opacity:0.8;">For further editing</small></button>
+                </div>
+            </div>
+            <div class="output-card doc-essay" id="output-card"></div>
+        </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section id="features" class="section">
+        <h2>✨ Features</h2>
+        <p class="features-intro">"Generate any English document in 30 seconds — no signup, no data stored, just paste and go."</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <div class="feature-title">30-Second Generation</div>
+                <div class="feature-desc">AI writes a complete first draft in seconds — no waiting, no setup.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-title">Zero Data Storage</div>
+                <div class="feature-desc">Close the tab and everything's gone. Your content never lives on our servers.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✨</div>
+                <div class="feature-title">AI Polish &amp; Grammar Fix</div>
+                <div class="feature-desc">One click to refine tone, fix grammar and elevate your writing without changing facts.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📐</div>
+                <div class="feature-title">One-Click ATS Formatting</div>
+                <div class="feature-desc">Professional, applicant-tracking-system-friendly layout in one tap.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <div class="feature-title">Export to PDF / Word</div>
+                <div class="feature-desc">Dual-format download: PDF for submission, Word for further editing.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌍</div>
+                <div class="feature-title">No Signup Required</div>
+                <div class="feature-desc">No email, no account, no credit card. Open the page, paste, generate.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ PRICING ============ -->
+    <section id="pricing" class="section">
+        <h2>💰 Pricing</h2>
+
+        <div class="pricing-main">
+            <div class="pricing-badge">BETA</div>
+            <h3>Currently 100% Free during Beta.</h3>
+            <p>Pricing coming after we hear from you.</p>
+            <button id="btn-help-decide" class="btn btn-primary" type="button">👉 Help us decide — what would you pay?</button>
+        </div>
+
+        <div class="pricing-future">
+            <h4>Sneak peek of future pricing (Coming in 1 month):</h4>
+            <ul>
+                <li>• Free Forever — Basic templates + watermark</li>
+                <li>• Pay Per Use — $0.99 / once</li>
+                <li>• Monthly Pro — $4.99 / month</li>
+                <li class="recommended">• Yearly Pro — $19.99 / year ⭐ Recommended</li>
+                <li>• Lifetime — $29.99 (Limited to first 100 users) → after $49.99</li>
+            </ul>
+
+            <div class="lottery">
+                <h5>🎰 Monthly Lifetime Lottery</h5>
+                <p>Every month we give away 1 FREE Lifetime ($29.99 value)!</p>
+                <p style="margin-top:6px;">How to enter:</p>
+                <ul>
+                    <li>• Share us on Twitter / Reddit / Facebook → auto entry</li>
+                    <li>• Submit feedback → auto entry</li>
+                    <li>• Any paid user → auto entry</li>
+                </ul>
+                <p style="margin-top:8px;font-style:italic;">Hall of Winners: Coming Soon</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ CONTACT ============ -->
+    <section id="contact" class="section">
+        <h2>📩 Tell us what you think</h2>
+        <p class="section-intro">We're shaping CraftDoc with our early users. Drop a line — feature ideas, bug reports, even pricing thoughts. We read every message.</p>
+
+        <!--
+            REPLACE YOUR_FORM_ID with the form ID from your Formspree dashboard.
+            See README.md for the 5-step Formspree setup.
+        -->
+        <form id="contact-form" class="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+            <div>
+                <label for="cf-name">Name</label>
+                <input id="cf-name" name="name" type="text" required placeholder="Your name">
+            </div>
+            <div>
+                <label for="cf-email">Email <span style="font-weight:400;color:#9CA3AF;">(optional — we'll only use it to reply)</span></label>
+                <input id="cf-email" name="email" type="email" placeholder="you@example.com">
+            </div>
+            <div>
+                <label for="cf-message">Message</label>
+                <textarea id="cf-message" name="message" required placeholder="What feature would make CraftDoc 10× more useful for you? Or — what would you pay?"></textarea>
+            </div>
+            <button type="submit">Send Feedback</button>
+            <div id="contact-status" class="contact-status"></div>
+        </form>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>© 2025 CraftDoc · <a href="https://effortlessdoc.com">effortlessdoc.com</a> · Built with ❤️ for students, job hunters &amp; entrepreneurs.</p>
+    <p style="margin-top:6px;font-size:12px;opacity:0.7;">Powered by DeepSeek. No data stored. Generated content may need human review.</p>
+</footer>
+
+<!-- ============ CDN libraries for export ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+
+<!-- ============ App scripts ============ -->
+<script src="js/templates.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/player.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
