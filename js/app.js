@@ -114,10 +114,11 @@
   function updateGenerateState() {
     const ready = !!(state.category && state.document && state.template);
     $('#btn-generate').disabled = !ready || state.busy;
-    // Polish & Format require existing output
+    // Polish & Copy require existing output
     const hasOutput = !!state.lastOutput.trim();
     $('#btn-polish').disabled = !hasOutput || state.busy;
-    $('#btn-format').disabled = !hasOutput || !ready || state.busy;
+    const copyBtn = $('#btn-copy');
+    if (copyBtn) copyBtn.disabled = !hasOutput || state.busy;
     $('#btn-download-pdf').disabled = !hasOutput;
     $('#btn-download-word').disabled = !hasOutput;
   }
@@ -239,6 +240,211 @@
     }
   }
 
+  // ---- Reset menu ----
+  function performReset(scope) {
+    if (scope === 'input' || scope === 'all') {
+      $('#user-input').value = '';
+      // refresh counter
+      const counter = $('#input-counter');
+      if (counter) counter.textContent = '0 / 8000';
+    }
+    if (scope === 'output' || scope === 'all') {
+      state.lastOutput = '';
+      $('#output-card').innerHTML = '';
+      $('#output-section').classList.add('hidden');
+    }
+    if (scope === 'all') {
+      state.category = null;
+      state.document = null;
+      state.template = null;
+      renderStep1();
+      renderStep2();
+      renderStep3();
+    }
+    updateGenerateState();
+    showToast(
+      scope === 'input'  ? 'Input cleared.' :
+      scope === 'output' ? 'Generated document cleared.' :
+                           'Everything cleared. Start fresh!',
+      'ok'
+    );
+  }
+
+  function setupResetMenu() {
+    const btn  = $('#btn-reset');
+    const menu = $('#reset-menu');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.hidden = !menu.hidden;
+    });
+    // Show on hover too (desktop-friendly)
+    const wrap = btn.closest('.reset-wrap');
+    if (wrap) {
+      wrap.addEventListener('mouseleave', () => { menu.hidden = true; });
+    }
+    menu.querySelectorAll('button[data-reset]').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.hidden = true;
+        performReset(b.getAttribute('data-reset'));
+      });
+    });
+    // Close when clicking elsewhere
+    document.addEventListener('click', () => { menu.hidden = true; });
+  }
+
+  // ---- Copy all (solves the alt+A select-all issue) ----
+  function setupCopyAll() {
+    const btn = $('#btn-copy');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      if (!state.lastOutput.trim()) return;
+      try {
+        await navigator.clipboard.writeText(state.lastOutput);
+        showToast('📋 Full document copied to clipboard!', 'ok');
+      } catch (err) {
+        // Fallback for older browsers / non-https
+        const ta = document.createElement('textarea');
+        ta.value = state.lastOutput;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast('📋 Copied!', 'ok'); }
+        catch { showToast('⚠ Copy failed — please select manually.', 'err'); }
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
+  // ---- AI disclaimer banner dismiss (remembers user choice for 7 days) ----
+  function setupDisclaimerBanner() {
+    const banner = $('#ai-disclaimer-banner');
+    const close  = $('#aidb-close');
+    if (!banner || !close) return;
+    try {
+      const until = parseInt(localStorage.getItem('cd_aidb_dismiss_until') || '0', 10);
+      if (until > Date.now()) banner.style.display = 'none';
+    } catch {}
+    close.addEventListener('click', () => {
+      banner.style.display = 'none';
+      try {
+        localStorage.setItem('cd_aidb_dismiss_until', String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      } catch {}
+    });
+  }
+
+  // ---- High-risk template second-confirmation (extra verification reminder for high-stakes docs) ----
+  const HIGH_RISK_TEMPLATES = new Set([
+    'business_proposal_startup',
+    'business_proposal_corporate',
+    'business_proposal_tech',
+    'press_release',
+    'cover_letter_professional',
+    'cover_letter_friendly',
+    'cover_letter_direct',
+    'research_paper_standard',
+    'research_paper_apa',
+    'lab_report'
+  ]);
+
+  function showHighRiskWarning() {
+    // Lightweight inline banner above the output, no modal interruption
+    let bar = $('#high-risk-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'high-risk-bar';
+      bar.className = 'high-risk-bar';
+      bar.innerHTML =
+        '🚨 <strong>High-stakes document detected.</strong> ' +
+        'This document type is commonly used for job applications, official PR, academic submission, or investor pitches. ' +
+        '<strong>You are legally responsible for every claim, citation, and number it contains.</strong> ' +
+        'Verify all facts against primary sources before sending.';
+      const out = $('#output-section');
+      out.insertBefore(bar, out.querySelector('.output-card'));
+    }
+    bar.style.display = '';
+  }
+  function hideHighRiskWarning() {
+    const bar = $('#high-risk-bar');
+    if (bar) bar.style.display = 'none';
+  }
+
+  // ---- Lightweight template usage analytics (localStorage only, no server) ----
+  function trackTemplateUse(template, mode) {
+    try {
+      const raw = localStorage.getItem('cd_template_stats') || '{}';
+      const stats = JSON.parse(raw);
+      const key = `${template}::${mode}`;
+      stats[key] = (stats[key] || 0) + 1;
+      stats._lastUse = { template, mode, at: Date.now() };
+      localStorage.setItem('cd_template_stats', JSON.stringify(stats));
+    } catch {}
+  }
+
+  // ---- Remember-last-template prompt ("continue where you left off?") ----
+  function setupLastTemplateResume() {
+    try {
+      const raw = localStorage.getItem('cd_template_stats');
+      if (!raw) return;
+      const stats = JSON.parse(raw);
+      const last = stats._lastUse;
+      if (!last || !last.template) return;
+
+      const info = INDEX[last.template];
+      if (!info) return;
+
+      // Avoid annoying repeats: only prompt if last use was 1 hour - 30 days ago
+      const ageMs = Date.now() - (last.at || 0);
+      if (ageMs < 60 * 60 * 1000 || ageMs > 30 * 24 * 60 * 60 * 1000) return;
+
+      const dlg = document.createElement('div');
+      dlg.className = 'resume-dialog';
+      dlg.innerHTML = `
+        <div class="resume-card">
+          <h4>👋 Welcome back!</h4>
+          <p>Last time you used <strong>${escapeHtml(info.label || last.template)}</strong>.</p>
+          <p style="opacity:0.8;font-size:13px;">Continue with this template, or start fresh?</p>
+          <div class="resume-actions">
+            <button class="btn btn-primary" data-resume="yes">Continue with ${escapeHtml(info.label || 'last template')}</button>
+            <button class="btn btn-tertiary" data-resume="no">Start fresh</button>
+          </div>
+        </div>`;
+      document.body.appendChild(dlg);
+
+      dlg.querySelector('[data-resume="yes"]').addEventListener('click', () => {
+        // Restore selection by walking the templates tree to find category/document
+        for (const catKey of Object.keys(TEMPLATES)) {
+          const cat = TEMPLATES[catKey];
+          for (const doc of cat.documents) {
+            const tpl = doc.templates.find(t => t.id === last.template);
+            if (tpl) {
+              state.category = catKey;
+              state.document = doc.id;
+              state.template = tpl.id;
+              renderStep1();
+              renderStep2();
+              renderStep3();
+              updateGenerateState();
+              setTimeout(() => $('#step4').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+              break;
+            }
+          }
+        }
+        dlg.remove();
+      });
+      dlg.querySelector('[data-resume="no"]').addEventListener('click', () => dlg.remove());
+    } catch {}
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
   // ---- Init ----
   function init() {
     renderStep1();
@@ -246,12 +452,29 @@
     renderStep3();
     updateGenerateState();
 
-    $('#btn-generate').addEventListener('click', () => callAI('generate'));
-    $('#btn-polish').addEventListener('click',   () => callAI('polish'));
-    $('#btn-format').addEventListener('click',   () => callAI('format'));
+    $('#btn-generate').addEventListener('click', async () => {
+      hideHighRiskWarning();
+      await callAI('generate');
+      if (state.lastOutput && HIGH_RISK_TEMPLATES.has(state.template)) showHighRiskWarning();
+      if (state.lastOutput) trackTemplateUse(state.template, 'generate');
+    });
+    $('#btn-polish').addEventListener('click', async () => {
+      await callAI('polish');
+      if (state.lastOutput) trackTemplateUse(state.template, 'polish');
+    });
 
-    $('#btn-download-pdf').addEventListener('click',  () => window.CraftDocExporter.toPDF(state.lastOutput, state.template));
-    $('#btn-download-word').addEventListener('click', () => window.CraftDocExporter.toWord(state.lastOutput, state.template));
+    setupResetMenu();
+    setupCopyAll();
+    setupDisclaimerBanner();
+
+    $('#btn-download-pdf').addEventListener('click',  () => {
+      window.CraftDocExporter.toPDF(state.lastOutput, state.template);
+      trackTemplateUse(state.template, 'pdf');
+    });
+    $('#btn-download-word').addEventListener('click', () => {
+      window.CraftDocExporter.toWord(state.lastOutput, state.template);
+      trackTemplateUse(state.template, 'word');
+    });
 
     // "Help us decide" button scrolls to contact
     const helpBtn = $('#btn-help-decide');
@@ -279,6 +502,28 @@
       inp.addEventListener('input', upd);
       upd();
     }
+
+    // Constrain Ctrl/Cmd+A to the textarea or output card when focused inside them
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+        const inside = e.target.closest('#output-card, #user-input');
+        if (inside) {
+          // Let the browser do native select-all within the focused field/card
+          // (no preventDefault) — but stop bubbling so Edge doesn't grab the whole page.
+          e.stopPropagation();
+        }
+      }
+    }, true);
+
+    // Make output-card user-selectable & focusable so Ctrl+A works inside it
+    const outCard = $('#output-card');
+    if (outCard) {
+      outCard.setAttribute('tabindex', '0');
+      outCard.style.userSelect = 'text';
+    }
+
+    // Welcome-back prompt (must be last, after step renderers are ready)
+    setupLastTemplateResume();
   }
 
   if (document.readyState === 'loading') {

@@ -28,8 +28,100 @@ function checkRateLimit(ip) {
     return record.count <= RATE_LIMIT;
 }
 
+// ---- Hash an IP into an opaque 8-char token (privacy: don't store raw IPs) ----
+async function hashIp(ip) {
+    try {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('craftdoc::' + ip));
+        return Array.from(new Uint8Array(buf)).slice(0, 4).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch {
+        return 'unknown';
+    }
+}
+
+// ---- Cross-user analytics ----
+// Layer 1 (always on, zero config): structured console.log -> visible in Vercel Logs
+// Layer 2 (opt-in, requires Upstash Redis REST URL + TOKEN env vars): persisted aggregate counters
+async function logEvent(event) {
+    // Layer 1: structured log — searchable in Vercel Dashboard → Logs → search "CD_EVENT"
+    try {
+        console.log('CD_EVENT', JSON.stringify(event));
+    } catch {}
+
+    // Layer 2: optional Upstash Redis. If env vars not set, silently skip.
+    const url   = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) return;
+
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+    const tplKey  = `${event.template}::${event.mode}`;
+    // Pipeline 4 increments in one round-trip:
+    //   1) total counter for template+mode
+    //   2) per-day counter for template+mode
+    //   3) total counter for mode (generate/polish/pdf/word)
+    //   4) per-day counter for mode
+    const commands = [
+        ['HINCRBY', 'cd:stats:template', tplKey, 1],
+        ['HINCRBY', `cd:stats:daily:${today}`, tplKey, 1],
+        ['HINCRBY', 'cd:stats:mode', event.mode, 1],
+        ['HINCRBY', `cd:stats:daily:${today}`, `__mode__::${event.mode}`, 1]
+    ];
+    try {
+        await fetch(`${url}/pipeline`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(commands),
+            // Fire-and-forget: don't slow down user response if Redis is laggy
+            signal: AbortSignal.timeout(2000)
+        });
+    } catch (err) {
+        console.warn('CD_STATS_WRITE_FAIL', err?.message || 'unknown');
+    }
+}
+
 // ---- Anti-hallucination directive prepended to every prompt ----
-const ANTI_HALLUCINATION = `CRITICAL: You MUST preserve all user-provided facts EXACTLY: company names, school names, dates, numbers, technologies, locations, person names. Do NOT invent, modify, or substitute any factual information. Only enhance language quality, structure, and professional tone.`;
+// v2.1 — Hardened after testing revealed Business Proposal hallucinated Gartner/Statista citations,
+//        Resume hallucinated email/LinkedIn/GitHub URLs, and Cold Email is the only zero-hallucination
+//        template (because it has a 150-word hard cap that removes "fill-the-space" pressure).
+const ANTI_HALLUCINATION = `[CRITICAL ANTI-HALLUCINATION RULES — VIOLATING ANY OF THESE = TASK FAILURE]
+
+You are STRICTLY FORBIDDEN from inventing the following. If the user did not provide it, leave a placeholder in [SQUARE BRACKETS] so the user can fill in verified data themselves.
+
+1. CONTACT INFORMATION
+   ❌ NEVER invent email addresses, phone numbers, LinkedIn URLs, GitHub URLs, personal websites, or physical addresses.
+   ❌ Examples of what NOT to write: "alex.chen@email.com", "linkedin.com/in/johndoe", "github.com/alexchen", "555-0123"
+   ✅ Instead write: "[Your Email]", "[Your Phone]", "[Your LinkedIn URL]", "[Your GitHub]"
+
+2. NUMBERS, METRICS, PERCENTAGES
+   ❌ NEVER invent any number with %, $, or units (M/B/K/users/customers/years).
+   ❌ Examples of what NOT to write: "increased revenue by 15%", "saved $200K annually", "managed team of 12", "5 years experience", "30+ reports"
+   ✅ Only use numbers the user explicitly provided in their input. If absent, write "[X%]", "[$ amount]", "[N team members]" or rephrase qualitatively ("significant growth", "a multi-person team").
+
+3. RESEARCH CITATIONS, MARKET DATA, INDUSTRY SOURCES
+   ❌ NEVER invent reports, studies, surveys, or market sizing numbers.
+   ❌ Examples of what NOT to write: "Gartner 2023 report", "Statista 2024", "McKinsey study shows", "internal survey n=200", "TAM $8B / SAM $2B / SOM $200M", "according to a recent industry report"
+   ✅ Instead write: "[cite verified market source]", "[insert validated TAM/SAM/SOM]", or simply remove the unsupported claim.
+
+4. NAMES, COMPANIES, PROJECTS, INSTITUTIONS NOT IN USER INPUT
+   ❌ NEVER add real-sounding entities the user did not mention.
+   ❌ Examples of what NOT to write: "former Google project", "Stanford alumnus", "Series A from Sequoia", "partnered with Microsoft"
+   ✅ Instead write: "[Previous Employer]", "[University Name]", or omit.
+
+5. AWARDS, RANKINGS, CREDENTIALS, CERTIFICATIONS
+   ❌ NEVER invent awards, rankings, or credentials.
+   ❌ Examples of what NOT to write: "ranked #1 in industry", "Forbes 30 Under 30", "3 years consecutive top performer", "AWS certified"
+   ✅ Only include awards/credentials the user explicitly listed.
+
+6. DATES, TIMELINES, DURATIONS NOT IN USER INPUT
+   ❌ NEVER invent specific dates, founding years, employment tenures.
+   ❌ Examples of what NOT to write: "founded in 2019", "Q2 2024 launch", "since March 2021"
+   ✅ Write "[Year]", "[Date]", or use relative language.
+
+GOLDEN RULE: Your job is to enhance LANGUAGE QUALITY (grammar, tone, structure, vocabulary), NOT to invent FACTS. A shorter authentic document with [BRACKETS] is ALWAYS better than a longer fabricated one. The user will fill in the brackets and verify before submission.
+
+PRESERVE EXACTLY: every company name, school name, date, number, technology, location, and person name the user DID provide.`;
 
 // ---- 30 template prompts (kept server-side so the prompt logic is canonical) ----
 const TEMPLATE_PROMPTS = {
@@ -82,7 +174,7 @@ function buildMessages(template, mode, content) {
         system = `${ANTI_HALLUCINATION}\n\n${tpl}\n\nReturn ONLY the finished document text. Do not include any explanation, preamble, or markdown code fences.`;
         user = `User input (raw notes / requirements):\n\n${content}`;
     } else if (mode === 'polish') {
-        system = `${ANTI_HALLUCINATION}\n\nYou are a senior English editor. Polish and proofread the following document. Fix grammar, improve clarity, tighten sentences, and elevate professional tone — but do NOT change any facts, numbers, names, or the overall structure. Return ONLY the polished document.`;
+        system = `${ANTI_HALLUCINATION}\n\nYou are a senior English editor. Polish and proofread the following document. Fix grammar, improve clarity, tighten sentences, and elevate professional tone — but you MUST:\n- Keep the EXACT same number of paragraphs (do not merge, split, add, or remove paragraphs)\n- Keep the EXACT same essay type (argumentative stays argumentative — do NOT convert to persuasive; expository stays expository)\n- Keep the EXACT same arguments and counter-arguments (if the original has a counter-argument paragraph, KEEP it)\n- Keep every fact, number, name, date, citation EXACTLY as written\n\nReturn ONLY the polished document.`;
         user = `Document to polish:\n\n${content}`;
     } else if (mode === 'format') {
         system = `${ANTI_HALLUCINATION}\n\nYou are a document-formatting specialist. Reformat the following content to match this template style:\n\n${tpl}\n\nRestructure section headings and ordering as needed, but preserve every factual detail. Return ONLY the reformatted document.`;
@@ -158,6 +250,20 @@ export default async function handler(req, res) {
         if (!text) {
             return res.status(502).json({ error: 'Empty response from AI' });
         }
+
+        // Record analytics event (Layer 1 always; Layer 2 if Upstash env vars set).
+        // Don't block the response — fire-and-forget, errors are swallowed inside logEvent.
+        const ipHash = await hashIp(ip);
+        logEvent({
+            ts: new Date().toISOString(),
+            template,
+            docType,
+            mode,
+            input_len: content.length,
+            output_len: text.length,
+            ip_hash: ipHash
+        }).catch(() => {});
+
         return res.status(200).json({ content: text });
     } catch (error) {
         console.error('Generation error:', error);

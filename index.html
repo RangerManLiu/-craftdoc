@@ -17,6 +17,18 @@
 </head>
 <body>
 
+<!-- ============ AI DISCLAIMER BANNER (always visible, dismissible) ============ -->
+<div id="ai-disclaimer-banner" class="ai-disclaimer-banner">
+    <span class="aidb-icon">⚠️</span>
+    <span class="aidb-text">
+        <strong>AI-Generated Content Notice:</strong>
+        All documents are produced by AI and may contain factual errors, fabricated statistics, or invented citations.
+        <strong>Always review and verify before submitting</strong> — especially names, numbers, contact info, and any cited sources.
+        Not legal, medical, or financial advice. See <a href="legal/terms.html">Terms &amp; Disclaimer</a>.
+    </span>
+    <button id="aidb-close" class="aidb-close" type="button" aria-label="Dismiss">×</button>
+</div>
+
 <header class="site-header">
     <a href="#" class="site-logo">
         <img src="img/logo.png" alt="CraftDoc" onerror="this.src='img/logo.svg'">
@@ -81,10 +93,24 @@
                 <textarea id="user-input" placeholder="Paste anything: rough notes, bullet points, an existing draft, or a job description. The AI will turn it into a polished document. Min 10 chars, max 8000."></textarea>
                 <div class="input-meta"><span id="input-counter">0 / 8000</span></div>
 
+                <!-- Compliance notice for high-stakes use -->
+                <div class="compliance-notice">
+                    🔞 <strong>Age Restriction:</strong> CraftDoc is intended for users aged 18 and over (or 16+ with verified parent/guardian consent in jurisdictions where applicable). By using this tool you confirm you meet this requirement. Minors must not submit AI-generated content to schools, employers, or any institution without adult review.
+                </div>
+
                 <div class="action-row">
                     <button id="btn-generate" class="btn btn-primary" disabled>✨ Generate</button>
                     <button id="btn-polish"   class="btn btn-secondary" disabled>✨ Polish &amp; Correct</button>
-                    <button id="btn-format"   class="btn btn-tertiary"  disabled>📐 One-Click Format</button>
+                    <button id="btn-copy"     class="btn btn-secondary" disabled>📋 Copy All</button>
+                    <!-- Reset menu replaces the old "One-Click Format" button -->
+                    <div class="reset-wrap">
+                        <button id="btn-reset" class="btn btn-tertiary" type="button">🔄 Reset ▾</button>
+                        <div id="reset-menu" class="reset-menu" hidden>
+                            <button type="button" data-reset="input">Clear my input only</button>
+                            <button type="button" data-reset="output">Clear generated document only</button>
+                            <button type="button" data-reset="all">Clear everything (start over)</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -97,6 +123,12 @@
                     <button id="btn-download-pdf"  class="btn btn-secondary" disabled>📄 Download PDF<br><small style="font-weight:400;font-size:11px;opacity:0.8;">For HR / submission</small></button>
                     <button id="btn-download-word" class="btn btn-secondary" disabled>📝 Download Word<br><small style="font-weight:400;font-size:11px;opacity:0.8;">For further editing</small></button>
                 </div>
+            </div>
+            <!-- Per-output verification reminder -->
+            <div class="output-verify-bar">
+                ⚠️ <strong>Before you submit this document:</strong>
+                check all <em>names, dates, numbers, percentages, contact info, and any cited sources</em> — AI can fabricate plausible-looking data.
+                Use <strong>[brackets]</strong> as a signal to replace placeholder text with your real information.
             </div>
             <div class="output-card doc-essay" id="output-card"></div>
         </div>
@@ -123,9 +155,9 @@
                 <div class="feature-desc">One click to refine tone, fix grammar and elevate your writing without changing facts.</div>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">📐</div>
-                <div class="feature-title">One-Click ATS Formatting</div>
-                <div class="feature-desc">Professional, applicant-tracking-system-friendly layout in one tap.</div>
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-title">Built-in Safety Guardrails</div>
+                <div class="feature-desc">AI is instructed NOT to fabricate contact info, statistics, or citations — leaves [brackets] for you to fill in real data instead.</div>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">📄</div>
@@ -147,10 +179,17 @@
         <div class="pricing-main">
             <div class="pricing-badge">BETA</div>
             <h3>Currently 100% Free during Beta.</h3>
-            <p>Pricing coming after we hear from you.</p>
+            <p>We're collecting user feedback to decide on fair pricing — your input directly shapes what we charge (or don't).</p>
             <button id="btn-help-decide" class="btn btn-primary" type="button">👉 Help us decide — what would you pay?</button>
         </div>
 
+        <!--
+            Sneak-peek pricing tiers and lottery are intentionally hidden until we've validated
+            with real user feedback. Per product owner decision (2026-05-27): showing concrete
+            tiers and giveaways before validation undermines the "collecting feedback" pitch.
+            Restore by uncommenting the block below when ready to launch paid plans.
+        -->
+        <!--
         <div class="pricing-future">
             <h4>Sneak peek of future pricing (Coming in 1 month):</h4>
             <ul>
@@ -173,6 +212,7 @@
                 <p style="margin-top:8px;font-style:italic;">Hall of Winners: Coming Soon</p>
             </div>
         </div>
+        -->
     </section>
 
     <!-- ============ CONTACT ============ -->
@@ -205,7 +245,12 @@
 
 <footer class="site-footer">
     <p>© 2025 CraftDoc · <a href="https://effortlessdoc.com">effortlessdoc.com</a> · Built with ❤️ for students, job hunters &amp; entrepreneurs.</p>
-    <p style="margin-top:6px;font-size:12px;opacity:0.7;">Powered by DeepSeek. No data stored. Generated content may need human review.</p>
+    <p style="margin-top:6px;font-size:12px;opacity:0.7;">
+        Powered by DeepSeek · No data stored ·
+        <a href="legal/terms.html" style="color:inherit;text-decoration:underline;">Terms &amp; AI Disclaimer</a> ·
+        Adults 18+ only ·
+        Generated content requires human review.
+    </p>
 </footer>
 
 <!-- ============ CDN libraries for export ============ -->

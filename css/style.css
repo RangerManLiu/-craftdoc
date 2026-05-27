@@ -571,3 +571,177 @@ main, header, footer { position: relative; z-index: 1; }
     .action-row .btn { width: 100%; justify-content: center; }
     .player-panel { width: calc(100vw - 44px); }
 }
+
+/* ==========================================================================
+   v2.1 — Legal & UX additions (2026-05-27)
+   AI disclaimer banner, compliance notices, reset menu, copy button,
+   high-risk warning, welcome-back dialog, output-card selection support.
+   ========================================================================== */
+
+/* ---- AI Disclaimer Banner (top of every page, dismissible) ---- */
+.ai-disclaimer-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(90deg, #FEF3C7 0%, #FDE68A 100%);
+    border-bottom: 2px solid #F59E0B;
+    color: #78350F;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.ai-disclaimer-banner .aidb-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.ai-disclaimer-banner .aidb-text {
+    flex: 1;
+}
+.ai-disclaimer-banner .aidb-text a {
+    color: #78350F;
+    text-decoration: underline;
+    font-weight: 600;
+}
+.ai-disclaimer-banner .aidb-close {
+    background: transparent;
+    border: none;
+    color: #78350F;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+.ai-disclaimer-banner .aidb-close:hover { color: #92400E; }
+
+/* ---- Compliance notice (age restriction, near user input) ---- */
+.compliance-notice {
+    margin: 10px 0 16px;
+    padding: 10px 14px;
+    background: #F3F4F6;
+    border-left: 3px solid #6B7280;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #374151;
+}
+
+/* ---- Per-output verification reminder ---- */
+.output-verify-bar {
+    margin: 0 0 12px;
+    padding: 12px 16px;
+    background: #FFFBEB;
+    border: 1px solid #FCD34D;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #78350F;
+}
+.output-verify-bar em {
+    color: #92400E;
+    font-style: normal;
+    font-weight: 600;
+}
+
+/* ---- High-risk template warning bar (above generated output for proposal/PR/cover letter etc.) ---- */
+.high-risk-bar {
+    margin: 0 0 12px;
+    padding: 14px 18px;
+    background: linear-gradient(90deg, #FEE2E2 0%, #FECACA 100%);
+    border: 2px solid #DC2626;
+    border-radius: 8px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #7F1D1D;
+}
+
+/* ---- Reset menu wrapper (replaces One-Click Format) ---- */
+.reset-wrap {
+    position: relative;
+    display: inline-block;
+}
+.reset-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 240px;
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 100;
+    overflow: hidden;
+}
+.reset-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    font-size: 13.5px;
+    color: #1F2937;
+    cursor: pointer;
+    border-bottom: 1px solid #F3F4F6;
+}
+.reset-menu button:last-child { border-bottom: none; }
+.reset-menu button:hover { background: #F9FAFB; }
+.reset-menu button[data-reset="all"] { color: #DC2626; font-weight: 600; }
+
+/* ---- Welcome-back resume dialog ---- */
+.resume-dialog {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.resume-dialog .resume-card {
+    background: #FFFFFF;
+    padding: 28px 32px;
+    border-radius: 12px;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    text-align: center;
+}
+.resume-dialog .resume-card h4 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    color: #1F2937;
+}
+.resume-dialog .resume-card p {
+    margin: 6px 0;
+    color: #4B5563;
+    font-size: 14px;
+}
+.resume-dialog .resume-actions {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.resume-dialog .resume-actions .btn { width: 100%; }
+
+/* ---- Output card: ensure user can select text (helps Ctrl+A) ---- */
+#output-card {
+    user-select: text;
+    -webkit-user-select: text;
+}
+#output-card:focus { outline: 2px solid #3B82F6; outline-offset: 2px; }
+
+/* ---- Responsive: stack disclaimer text on small screens ---- */
+@media (max-width: 600px) {
+    .ai-disclaimer-banner {
+        flex-wrap: wrap;
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+    .reset-menu {
+        right: auto;
+        left: 0;
+        min-width: 220px;
+    }
+}
