@@ -1,4 +1,4 @@
-# CraftDoc v2
+# CraftDoc v2 
 
 > **From homework to job hunt — AI writes your perfect English document in 30 seconds.**
 > 30+ templates · No signup · No data stored · 100% Free during Beta
