@@ -275,24 +275,59 @@
     const menu = $('#reset-menu');
     if (!btn || !menu) return;
 
+    const wrap = btn.closest('.reset-wrap') || btn.parentElement;
+    let closeTimer = null;
+
+    const openMenu  = () => { clearTimeout(closeTimer); menu.hidden = false; };
+    const closeMenu = () => { menu.hidden = true; };
+    const scheduleClose = () => {
+      clearTimeout(closeTimer);
+      closeTimer = setTimeout(closeMenu, 300); // 300ms grace period
+    };
+
+    // Hover open (desktop) — opens on button hover, stays open over menu
+    if (wrap) {
+      wrap.addEventListener('mouseenter', openMenu);
+      wrap.addEventListener('mouseleave', scheduleClose);
+    }
+    menu.addEventListener('mouseenter', openMenu);
+    menu.addEventListener('mouseleave', scheduleClose);
+
+    // Click toggle (works for touch/mobile and explicit clicks)
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      clearTimeout(closeTimer);
       menu.hidden = !menu.hidden;
     });
-    // Show on hover too (desktop-friendly)
-    const wrap = btn.closest('.reset-wrap');
-    if (wrap) {
-      wrap.addEventListener('mouseleave', () => { menu.hidden = true; });
-    }
+
+    // Prevent menu clicks from bubbling to document handler
+    menu.addEventListener('click', (e) => { e.stopPropagation(); });
+
+    // Handle option clicks
     menu.querySelectorAll('button[data-reset]').forEach(b => {
       b.addEventListener('click', (e) => {
         e.stopPropagation();
+        clearTimeout(closeTimer);
         menu.hidden = true;
         performReset(b.getAttribute('data-reset'));
       });
     });
-    // Close when clicking elsewhere
-    document.addEventListener('click', () => { menu.hidden = true; });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (menu.hidden) return;
+      if (btn.contains(e.target) || menu.contains(e.target)) return;
+      clearTimeout(closeTimer);
+      menu.hidden = true;
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        clearTimeout(closeTimer);
+        menu.hidden = true;
+      }
+    });
   }
 
   // ---- Copy all (solves the alt+A select-all issue) ----
@@ -505,30 +540,4 @@
 
     // Constrain Ctrl/Cmd+A to the textarea or output card when focused inside them
     document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
-        const inside = e.target.closest('#output-card, #user-input');
-        if (inside) {
-          // Let the browser do native select-all within the focused field/card
-          // (no preventDefault) — but stop bubbling so Edge doesn't grab the whole page.
-          e.stopPropagation();
-        }
-      }
-    }, true);
-
-    // Make output-card user-selectable & focusable so Ctrl+A works inside it
-    const outCard = $('#output-card');
-    if (outCard) {
-      outCard.setAttribute('tabindex', '0');
-      outCard.style.userSelect = 'text';
-    }
-
-    // Welcome-back prompt (must be last, after step renderers are ready)
-    setupLastTemplateResume();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key ==
