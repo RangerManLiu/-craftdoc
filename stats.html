@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>CraftDoc · Internal Stats</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-card: #121212;
+      --bg-card-2: #1a1a1a;
+      --border: #1f1f1f;
+      --text: #e8e8e8;
+      --text-dim: #888;
+      --text-mid: #aaa;
+      --accent: #00ff88;
+      --accent-dim: rgba(0,255,136,0.15);
+      --danger: #ff4d4d;
+      --warn: #ffaa00;
+      --blue: #4cc3ff;
+      --pink: #ff6bd6;
+      --purple: #c084fc;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                   "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); }
+    header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: linear-gradient(180deg, rgba(0,255,136,0.04), transparent);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    header .badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    header .grow { flex: 1; }
+    header .meta {
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+    .btn {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary {
+      background: var(--accent);
+      color: #002818;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .btn-primary:hover { background: #00cc6b; border-color: #00cc6b; color: #002818; }
+    .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 24px 64px;
+    }
+
+    /* ---- Login panel ---- */
+    .login-wrap {
+      max-width: 420px;
+      margin: 80px auto;
+      padding: 32px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .login-wrap h2 { margin: 0 0 8px; font-size: 22px; }
+    .login-wrap p  { color: var(--text-dim); font-size: 13px; margin: 0 0 24px; }
+    .login-wrap input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: #0a0a0a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      margin-bottom: 12px;
+      transition: border-color 0.15s;
+    }
+    .login-wrap input[type="password"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .login-wrap .btn-primary { width: 100%; padding: 12px; font-size: 15px; }
+    .login-error {
+      color: var(--danger);
+      font-size: 13px;
+      margin-top: 12px;
+      min-height: 18px;
+    }
+    .login-warn {
+      color: var(--warn);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    /* ---- KPI cards ---- */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .kpi {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+    .kpi .label {
+      color: var(--text-dim);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    .kpi .value {
+      font-size: 32px;
+      font-weight: 700;
+      margin-top: 6px;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .kpi .hint {
+      color: var(--text-dim);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* ---- Chart grid ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .card h3 {
+      margin: 0 0 14px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: var(--text-mid);
+      text-transform: uppercase;
+    }
+    .card.full { grid-column: span 2; }
+    .chart-box { position: relative; height: 280px; }
+    .chart-box.tall { height: 360px; }
+
+    /* ---- Funnel ---- */
+    .funnel-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 90px 70px;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    .funnel-row .name { color: var(--text-mid); }
+    .funnel-row .bar-wrap {
+      background: #1a1a1a;
+      border-radius: 4px;
+      height: 22px;
+      overflow: hidden;
+      position: relative;
+    }
+    .funnel-row .bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #00c4ff);
+      transition: width 0.4s;
+      min-width: 2px;
+    }
+    .funnel-row .count {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+    .funnel-row .pct {
+      text-align: right;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+    .funnel-step-drop {
+      color: var(--warn);
+      font-size: 12px;
+      margin: -4px 0 8px 152px;
+    }
+
+    /* ---- States ---- */
+    .state-msg {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warn);
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .state-msg.err { border-left-color: var(--danger); }
+    .state-msg.ok  { border-left-color: var(--accent); }
+    .state-msg .t  { font-weight: 600; margin-bottom: 4px; }
+    .state-msg .b  { color: var(--text-dim); font-size: 13px; }
+    .spinner-wrap { text-align: center; padding: 60px 0; color: var(--text-dim); }
+    .hidden { display: none !important; }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 900px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+      .card.full { grid-column: span 1; }
+      .funnel-row { grid-template-columns: 110px 1fr 70px 60px; font-size: 12px; }
+      .funnel-step-drop { margin-left: 122px; }
+    }
+    @media (max-width: 520px) {
+      header { padding: 14px 16px; }
+      header h1 { font-size: 15px; }
+      main { padding: 14px 12px 48px; }
+      .kpi-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .kpi { padding: 14px; }
+      .kpi .value { font-size: 24px; }
+      .chart-box { height: 240px; }
+      .chart-box.tall { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 CraftDoc</h1>
+    <span class="badge">Internal Stats</span>
+    <div class="grow"></div>
+    <span class="meta" id="last-updated"></span>
+    <button class="btn" id="btn-refresh" hidden>↻ Refresh</button>
+    <button class="btn btn-danger" id="btn-logout" hidden>Log out</button>
+  </header>
+
+  <main id="main">
+    <!-- Login -->
+    <section id="login" class="login-wrap">
+      <h2>🔒 Access required</h2>
+      <p>Enter the <code style="color:var(--accent)">STATS_PASSWORD</code> set in your Vercel environment variables.</p>
+      <input type="password" id="token-input" placeholder="Admin token…" autocomplete="off" autofocus />
+      <button class="btn-primary btn" id="btn-login">Sign in</button>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-warn" id="login-warn"></div>
+    </section>
+
+    <!-- Dashboard (filled after successful auth) -->
+    <section id="dashboard" class="hidden">
+      <div id="state-area"></div>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">UV today</div><div class="value" id="kpi-uv-today">—</div><div class="hint">unique visitors (UTC)</div></div>
+        <div class="kpi"><div class="label">UV last 7 days</div><div class="value" id="kpi-uv-7d">—</div><div class="hint">sum of daily UV (may double-count returning users)</div></div>
+        <div class="kpi"><div class="label">Total generations</div><div class="value" id="kpi-gen">—</div><div class="hint">all-time successful generate calls</div></div>
+        <div class="kpi"><div class="label">Total downloads</div><div class="value" id="kpi-dl">—</div><div class="hint">PDF + Word combined</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="card full">
+          <h3>📈 Last 7 days — UV vs total events</h3>
+          <div class="chart-box"><canvas id="chart-trend"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>🔥 Top 10 templates</h3>
+          <div class="chart-box tall"><canvas id="chart-templates"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>🎯 Feature usage breakdown</h3>
+          <div class="chart-box tall"><canvas id="chart-modes"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>🔄 Reset choice distribution</h3>
+          <div class="chart-box"><canvas id="chart-reset"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>🎢 Conversion funnel</h3>
+          <div id="funnel"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    // ---------- DOM refs ----------
+    const $ = (id) => document.getElementById(id);
+    const loginEl     = $('login');
+    const dashEl      = $('dashboard');
+    const stateArea   = $('state-area');
+    const tokenInput  = $('token-input');
+    const loginBtn    = $('btn-login');
+    const loginErr    = $('login-error');
+    const loginWarn   = $('login-warn');
+    const refreshBtn  = $('btn-refresh');
+    const logoutBtn   = $('btn-logout');
+    const lastUpd     = $('last-updated');
+
+    const LS_KEY = 'cd_admin_token';
+
+    // Persisted Chart.js instances so we can destroy them on refresh
+    const charts = {};
+    function destroyAll() {
+      for (const k of Object.keys(charts)) {
+        try { charts[k].destroy(); } catch {}
+        delete charts[k];
+      }
+    }
+
+    // Chart.js global defaults — dark theme
+    if (window.Chart) {
+      Chart.defaults.color = '#aaa';
+      Chart.defaults.borderColor = '#1f1f1f';
+      Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    }
+
+    // ---------- helpers ----------
+    function showState(kind, title, body) {
+      stateArea.innerHTML = '';
+      const d = document.createElement('div');
+      d.className = 'state-msg ' + (kind || '');
+      d.innerHTML = '<div class="t"></div><div class="b"></div>';
+      d.querySelector('.t').textContent = title || '';
+      d.querySelector('.b').textContent = body || '';
+      stateArea.appendChild(d);
+    }
+    function clearState() { stateArea.innerHTML = ''; }
+
+    function fmt(n) {
+      if (n == null || isNaN(n)) return '—';
+      return Number(n).toLocaleString();
+    }
+
+    function getToken() {
+      try { return localStorage.getItem(LS_KEY) || ''; } catch { return ''; }
+    }
+    function setToken(t) {
+      try { localStorage.setItem(LS_KEY, t); } catch {}
+    }
+    function clearToken() {
+      try { localStorage.removeItem(LS_KEY); } catch {}
+    }
+
+    function logout() {
+      clearToken();
+      destroyAll();
+      dashEl.classList.add('hidden');
+      loginEl.classList.remove('hidden');
+      refreshBtn.hidden = true;
+      logoutBtn.hidden  = true;
+      lastUpd.textContent = '';
+      tokenInput.value = '';
+      loginErr.textContent = '';
+      tokenInput.focus();
+    }
+
+    // ---------- fetch + dispatch ----------
+    async function loadStats() {
+      const token = getToken();
+      if (!token) { logout(); return; }
+
+      refreshBtn.disabled = true;
+      const prevLabel = refreshBtn.textContent;
+      refreshBtn.textContent = '⟳ Loading…';
+
+      try {
+        const resp = await fetch('/api/stats?key=' + encodeURIComponent(token), {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+        let data = null;
+        try { data = await resp.json(); } catch {}
+
+        if (resp.status === 401) {
+          // Token invalid — bounce back to login and warn
+          clearToken();
+          dashEl.classList.add('hidden');
+          loginEl.classList.remove('hidden');
+          refreshBtn.hidden = true;
+          logoutBtn.hidden  = true;
+          loginErr.textContent = 'Token rejected. Double-check STATS_PASSWORD in Vercel → Settings → Environment Variables.';
+          return;
+        }
+        if (resp.status === 503) {
+          loginEl.classList.add('hidden');
+          dashEl.classList.remove('hidden');
+          refreshBtn.hidden = false;
+          logoutBtn.hidden  = false;
+          showState('err',
+            'Upstash Redis not configured',
+            (data && (data.hint || data.error)) ||
+              'Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars in Vercel. See README → "Upstash Redis 一键配置".');
+          // Clear KPIs/charts so the user sees a clean "no data" state
+          destroyAll();
+          ['kpi-uv-today','kpi-uv-7d','kpi-gen','kpi-dl'].forEach(id => $(id).textContent = '—');
+          $('funnel').innerHTML = '';
+          return;
+        }
+        if (!resp.ok) {
+          loginEl.classList.add('hidden');
+          dashEl.classList.remove('hidden');
+          refreshBtn.hidden = false;
+          logoutBtn.hidden  = false;
+          showState('err',
+            'Backend error (HTTP ' + resp.status + ')',
+            (data && (data.detail || data.error)) || 'Try again in a minute.');
+          return;
+        }
+
+        // ---- Success ----
+        loginEl.classList.add('hidden');
+        dashEl.classList.remove('hidden');
+        refreshBtn.hidden = false;
+        logoutBtn.hidden  = false;
+        clearState();
+        render(data || {});
+        lastUpd.textContent = 'Updated ' + new Date().toLocaleString();
+      } catch (err) {
+        loginEl.classList.add('hidden');
+        dashEl.classList.remove('hidden');
+        refreshBtn.hidden = false;
+        logoutBtn.hidden  = false;
+        showState('err', 'Network error', (err && err.message) || 'Failed to reach /api/stats.');
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = prevLabel;
+      }
+    }
+
+    // ---------- render ----------
+    function render(data) {
+      destroyAll();
+
+      // Defaults so the page never crashes on missing fields
+      const ymd7      = Array.isArray(data.ymd7) ? data.ymd7 : [];
+      const uvArr     = Array.isArray(data.last_7_days_uv) ? data.last_7_days_uv : [];
+      const dailyEvts = data.last_7_days_events || {};
+      const eventTot  = data.event_totals || {};
+      const modeTot   = data.mode_totals  || {};
+      const tplOverall= Array.isArray(data.top_templates_overall) ? data.top_templates_overall : [];
+      const resetDist = data.reset_choice_distribution || { all:{count:0,pct:0}, text:{count:0,pct:0}, template:{count:0,pct:0} };
+      const funnel    = data.funnel || { page_view:0, template_select:0, generate:0, copy:0, pdf:0, word:0 };
+
+      // ---- KPI ----
+      $('kpi-uv-today').textContent = fmt(data.uv_today != null ? data.uv_today : (uvArr[0] || 0));
+      $('kpi-uv-7d').textContent    = fmt(data.uv_7d_sum != null ? data.uv_7d_sum : uvArr.reduce((a,b)=>a+(b||0),0));
+      $('kpi-gen').textContent      = fmt(eventTot.generate || modeTot.generate || 0);
+      $('kpi-dl').textContent       = fmt(data.downloads_total != null
+        ? data.downloads_total
+        : ((eventTot.pdf || modeTot.pdf || 0) + (eventTot.word || modeTot.word || 0)));
+
+      // ---- Trend chart (7 days reversed → oldest first) ----
+      const days = ymd7.slice().reverse();
+      const uvSeries = ymd7.slice().reverse().map((d, i) => uvArr[ymd7.length - 1 - i] || 0);
+      const evSeries = days.map(d => {
+        const dd = dailyEvts[d] || {};
+        return Object.values(dd).reduce((a,b)=>a+(b||0),0);
+      });
+      charts.trend = new Chart($('chart-trend').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: days.map(d => d.slice(5)), // MM-DD
+          datasets: [
+            {
+              label: 'UV',
+              data: uvSeries,
+              borderColor: '#00ff88',
+              backgroundColor: 'rgba(0,255,136,0.12)',
+              fill: true,
+              tension: 0.35,
+              yAxisID: 'y',
+              pointRadius: 3,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Total events',
+              data: evSeries,
+              borderColor: '#4cc3ff',
+              backgroundColor: 'rgba(76,195,255,0.10)',
+              fill: false,
+              tension: 0.35,
+              yAxisID: 'y1',
+              pointRadius: 3,
+              pointHoverRadius: 5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y:  { type: 'linear', position: 'left',  beginAtZero: true,
+                  title: { display: true, text: 'UV',  color: '#00ff88' },
+                  grid: { color: '#1f1f1f' } },
+            y1: { type: 'linear', position: 'right', beginAtZero: true,
+                  title: { display: true, text: 'Events', color: '#4cc3ff' },
+                  grid: { drawOnChartArea: false } },
+            x:  { grid: { color: '#161616' } }
+          },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12 } }
+          }
+        }
+      });
+
+      // ---- Top 10 templates ----
+      const top10 = tplOverall.slice(0, 10);
+      charts.templates = new Chart($('chart-templates').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: top10.map(t => t.key),
+          datasets: [{
+            label: 'Uses',
+            data: top10.map(t => t.count),
+            backgroundColor: '#00ff88',
+            borderRadius: 4,
+            barThickness: 'flex',
+            maxBarThickness: 22
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { beginAtZero: true, grid: { color: '#1f1f1f' } },
+            y: { grid: { color: '#161616' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // ---- Feature breakdown pie ----
+      const modePie = {
+        generate: eventTot.generate || modeTot.generate || 0,
+        polish:   eventTot.polish   || modeTot.polish   || 0,
+        pdf:      eventTot.pdf      || modeTot.pdf      || 0,
+        word:     eventTot.word     || modeTot.word     || 0,
+        copy:     eventTot.copy_used || 0
+      };
+      charts.modes = new Chart($('chart-modes').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(modePie),
+          datasets: [{
+            data: Object.values(modePie),
+            backgroundColor: ['#00ff88','#4cc3ff','#ffaa00','#c084fc','#ff6bd6'],
+            borderColor: '#0a0a0a',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }
+        }
+      });
+
+      // ---- Reset choice bars ----
+      charts.reset = new Chart($('chart-reset').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Clear all', 'Clear text', 'Clear template'],
+          datasets: [{
+            label: 'Times',
+            data: [resetDist.all.count, resetDist.text.count, resetDist.template.count],
+            backgroundColor: ['#ff6bd6', '#4cc3ff', '#ffaa00'],
+            borderRadius: 6,
+            maxBarThickness: 60
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#1f1f1f' } },
+            x: { grid: { color: '#161616' } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const keys = ['all','text','template'];
+                  const k = keys[ctx.dataIndex];
+                  const e = resetDist[k] || { count: 0, pct: 0 };
+                  return e.count + ' (' + e.pct + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // ---- Funnel ----
+      renderFunnel(funnel);
+    }
+
+    function renderFunnel(f) {
+      const steps = [
+        { name: 'Page view',      key: 'page_view' },
+        { name: 'Template select',key: 'template_select' },
+        { name: 'Generate',       key: 'generate' },
+        { name: 'Copy / PDF / Word', key: 'final' }
+      ];
+      const final = (f.copy || 0) + (f.pdf || 0) + (f.word || 0);
+      const values = {
+        page_view: f.page_view || 0,
+        template_select: f.template_select || 0,
+        generate: f.generate || 0,
+        final: final
+      };
+      const top = Math.max(values.page_view, 1);
+
+      const html = [];
+      let prev = null;
+      for (const s of steps) {
+        const v = values[s.key] || 0;
+        const widthPct = Math.max(1, (v / top) * 100);
+        const overallPct = values.page_view ? Math.round((v / values.page_view) * 1000) / 10 : 0;
+        let dropLine = '';
+        if (prev !== null && prev > 0) {
+          const drop = prev - v;
+          const dropPct = prev ? Math.round((drop / prev) * 1000) / 10 : 0;
+          if (drop > 0) {
+            dropLine = `<div class="funnel-step-drop">↓ ${drop.toLocaleString()} dropped off (${dropPct}%)</div>`;
+          } else if (drop < 0) {
+            // unusual but possible (re-clicks etc.)
+            dropLine = `<div class="funnel-step-drop" style="color:var(--text-dim)">↑ ${(-drop).toLocaleString()} more (likely re-actions)</div>`;
+          }
+        }
+        html.push(
+          `<div class="funnel-row">
+            <div class="name">${escapeHtml(s.name)}</div>
+            <div class="bar-wrap"><div class="bar" style="width:${widthPct}%"></div></div>
+            <div class="count">${v.toLocaleString()}</div>
+            <div class="pct">${overallPct}%</div>
+          </div>${dropLine}`
+        );
+        prev = v;
+      }
+      $('funnel').innerHTML = html.join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    // ---------- bootstrap ----------
+    function attemptLoginFromInput() {
+      const t = (tokenInput.value || '').trim();
+      if (!t) {
+        loginErr.textContent = 'Please enter the password.';
+        return;
+      }
+      setToken(t);
+      loginErr.textContent = '';
+      loadStats();
+    }
+
+    loginBtn.addEventListener('click', attemptLoginFromInput);
+    tokenInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') attemptLoginFromInput();
+    });
+    refreshBtn.addEventListener('click', loadStats);
+    logoutBtn.addEventListener('click', logout);
+
+    // Heads-up if served from file:// — fetch will fail
+    if (location.protocol === 'file:') {
+      loginWarn.textContent = '⚠ Open this page via your deployed domain (effortlessdoc.com/stats.html). file:// can\'t call /api.';
+    }
+
+    // Auto-load if a token is already stored
+    if (getToken()) {
+      loginEl.classList.add('hidden');
+      loadStats();
+    }
+  })();
+  </script>
+</body>
+</html>

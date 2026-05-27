@@ -21,6 +21,16 @@ async function redisHGetAll(url, token, key) {
     return out;
 }
 
+// PFCOUNT for HyperLogLog UV estimation. Returns 0 on any error (missing key, network etc.).
+async function redisPFCount(url, token, key) {
+    const r = await fetch(`${url}/pfcount/${encodeURIComponent(key)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!r.ok) return 0;
+    const data = await r.json();
+    return parseInt(data.result, 10) || 0;
+}
+
 function sortByCount(obj) {
     return Object.entries(obj)
         .sort((a, b) => b[1] - a[1])
@@ -58,7 +68,7 @@ export default async function handler(req, res) {
 
     // ---- Pull aggregates ----
     const today  = new Date().toISOString().slice(0, 10);
-    const ymd7   = [];
+    const ymd7   = []; // [today, yesterday, ..., 6 days ago] — index 0 is most recent
     for (let i = 0; i < 7; i++) {
         const d = new Date();
         d.setUTCDate(d.getUTCDate() - i);
@@ -66,10 +76,22 @@ export default async function handler(req, res) {
     }
 
     try {
-        const [templateTotals, modeTotals, ...dailyDocs] = await Promise.all([
+        const [
+            templateTotals,
+            modeTotals,
+            eventTotals,
+            resetChoiceTotals,
+            dailyModeArr,
+            dailyEventArr,
+            dailyUvArr
+        ] = await Promise.all([
             redisHGetAll(url, token, 'cd:stats:template'),
             redisHGetAll(url, token, 'cd:stats:mode'),
-            ...ymd7.map(d => redisHGetAll(url, token, `cd:stats:daily:${d}`))
+            redisHGetAll(url, token, 'cd:stats:event'),
+            redisHGetAll(url, token, 'cd:stats:reset_choice'),
+            Promise.all(ymd7.map(d => redisHGetAll(url, token, `cd:stats:daily:${d}`))),
+            Promise.all(ymd7.map(d => redisHGetAll(url, token, `cd:stats:event_daily:${d}`))),
+            Promise.all(ymd7.map(d => redisPFCount(url, token, `cd:stats:uv:${d}`)))
         ]);
 
         // Roll up "template::mode" hash into a flat top-templates ranking (sum all modes per template)
@@ -80,18 +102,71 @@ export default async function handler(req, res) {
         }
 
         const daily = {};
-        ymd7.forEach((d, i) => { daily[d] = dailyDocs[i]; });
+        const dailyEvents = {};
+        ymd7.forEach((d, i) => {
+            daily[d]       = dailyModeArr[i]  || {};
+            dailyEvents[d] = dailyEventArr[i] || {};
+        });
 
         const grandTotal = Object.values(modeTotals).reduce((a, b) => a + b, 0);
 
+        // ---- Reset choice distribution (all / text / template) with percentages ----
+        const rcTotal =
+            (resetChoiceTotals.all      || 0) +
+            (resetChoiceTotals.text     || 0) +
+            (resetChoiceTotals.template || 0);
+        const pct = (n) => rcTotal > 0 ? Math.round((n / rcTotal) * 1000) / 10 : 0;
+        const reset_choice_distribution = {
+            total: rcTotal,
+            all:      { count: resetChoiceTotals.all      || 0, pct: pct(resetChoiceTotals.all      || 0) },
+            text:     { count: resetChoiceTotals.text     || 0, pct: pct(resetChoiceTotals.text     || 0) },
+            template: { count: resetChoiceTotals.template || 0, pct: pct(resetChoiceTotals.template || 0) }
+        };
+
+        // ---- Conversion funnel ----
+        // page_view → template_select → generate → copy / pdf / word
+        const funnel = {
+            page_view:       eventTotals.page_view       || 0,
+            template_select: eventTotals.template_select || 0,
+            generate:        eventTotals.generate        || modeTotals.generate || 0,
+            copy:            eventTotals.copy_used       || 0,
+            pdf:             eventTotals.pdf             || modeTotals.pdf      || 0,
+            word:            eventTotals.word            || modeTotals.word     || 0
+        };
+
+        // ---- UV aggregates ----
+        const last_7_days_uv = dailyUvArr;            // indices match ymd7
+        const uv_today       = last_7_days_uv[0] || 0;
+        const uv_7d_sum      = last_7_days_uv.reduce((a, b) => a + b, 0);
+
+        // ---- Event total across the last 7 days ----
+        const events_7d_sum = dailyEventArr
+            .map(d => Object.values(d).reduce((a, b) => a + b, 0))
+            .reduce((a, b) => a + b, 0);
+
+        // Total downloads = pdf + word (handy for top-line cards)
+        const downloads_total = (funnel.pdf || 0) + (funnel.word || 0);
+
         return res.status(200).json({
             generated_at: new Date().toISOString(),
+            // ---- Legacy fields (unchanged for backward compatibility) ----
             grand_total_api_calls: grandTotal,
             top_templates_overall: sortByCount(perTemplate),
             template_mode_breakdown: sortByCount(templateTotals),
             mode_totals: modeTotals,
             last_7_days_utc: daily,
-            note: 'Counts include both generate and polish/pdf/word events. PDF/Word are tracked client-side via app.js trackTemplateUse() — wire those into a separate /api/track endpoint if you want them in Redis too.'
+            // ---- New fields (added for the dashboard) ----
+            ymd7,                       // ordered date array (index 0 = today UTC)
+            event_totals: eventTotals,
+            last_7_days_events: dailyEvents,
+            last_7_days_uv,             // array aligned with ymd7
+            uv_today,
+            uv_7d_sum,
+            events_7d_sum,
+            downloads_total,
+            reset_choice_distribution,
+            funnel,
+            note: 'Counters include events from app.js → /api/track. PDF/Word/Copy are tracked client-side; per-day buckets auto-expire after ~60 days.'
         });
     } catch (err) {
         return res.status(502).json({ error: 'Stats backend error', detail: err?.message || 'unknown' });

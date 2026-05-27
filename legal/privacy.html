@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — CraftDoc</title>
+<meta name="description" content="CraftDoc privacy policy: what data we collect (very little), what we don't collect (almost everything), and your rights.">
+<link rel="icon" type="image/x-icon" href="../img/favicon.ico">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+    /* Legal page-specific overrides — keeps the main brand chrome but renders body as a long-form doc.
+       Kept identical to terms.html so the two legal pages look like a matched pair. */
+    .legal-wrap {
+        max-width: 820px;
+        margin: 40px auto 80px;
+        padding: 0 24px;
+        font-size: 15px;
+        line-height: 1.7;
+        color: #1F2937;
+    }
+    .legal-wrap h1 {
+        font-size: 30px;
+        margin: 0 0 8px;
+    }
+    .legal-wrap h2 {
+        font-size: 22px;
+        margin: 36px 0 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    .legal-wrap h3 {
+        font-size: 17px;
+        margin: 22px 0 8px;
+        color: #111827;
+    }
+    .legal-wrap .updated {
+        color: #6B7280;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+    .legal-wrap .callout {
+        background: #FEF3C7;
+        border-left: 4px solid #F59E0B;
+        padding: 14px 18px;
+        margin: 18px 0;
+        border-radius: 4px;
+        color: #78350F;
+    }
+    .legal-wrap .ok-callout {
+        background: #ECFDF5;
+        border-left: 4px solid #10B981;
+        padding: 14px 18px;
+        margin: 18px 0;
+        border-radius: 4px;
+        color: #065F46;
+    }
+    .legal-wrap .danger-callout {
+        background: #FEE2E2;
+        border-left: 4px solid #DC2626;
+        padding: 14px 18px;
+        margin: 18px 0;
+        border-radius: 4px;
+        color: #7F1D1D;
+    }
+    .legal-wrap ul { padding-left: 22px; margin: 8px 0 16px; }
+    .legal-wrap li { margin: 4px 0; }
+    .legal-wrap a { color: #2563EB; text-decoration: underline; }
+    .legal-wrap .back-link { display: inline-block; margin-bottom: 24px; color: #2563EB; }
+    .legal-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0;
+        font-size: 14px;
+    }
+    .legal-wrap th, .legal-wrap td {
+        text-align: left;
+        padding: 10px 12px;
+        border: 1px solid #E5E7EB;
+        vertical-align: top;
+    }
+    .legal-wrap th {
+        background: #F3F4F6;
+        font-weight: 600;
+    }
+    .legal-wrap code {
+        background: #F3F4F6;
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 0.92em;
+    }
+</style>
+</head>
+<body>
+
+<div class="legal-wrap">
+    <a href="../index.html" class="back-link">← Back to CraftDoc</a>
+
+    <h1>Privacy Policy</h1>
+    <p class="updated">Effective date: 2026-05-27 · Last updated: 2026-05-27</p>
+
+    <div class="ok-callout">
+        <strong>30-second summary:</strong> CraftDoc does <strong>not</strong> require an account, does <strong>not</strong> store your input text after the AI returns its answer, does <strong>not</strong> use advertising cookies, and does <strong>not</strong> sell or share personal data. We collect anonymous usage counters (e.g. "the resume template was used 42 times today") with no link to who you are. Read on for the details.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>1. Who this policy applies to</h2>
+    <p>This Privacy Policy applies to your use of <strong>CraftDoc</strong> (the "Service") at <a href="https://effortlessdoc.com">effortlessdoc.com</a>, including the document builder, the export tools, the contact form, and the internal stats page. It is written in plain English so you can actually read it.</p>
+
+    <!-- ============================================================ -->
+    <h2>2. Data we collect</h2>
+
+    <h3>2.1 Document inputs you paste into the Builder</h3>
+    <p>When you click <strong>Generate</strong> or <strong>Polish &amp; Correct</strong>, the text in the input box is sent over HTTPS to our Vercel Serverless Function (<code>/api/generate</code>), which immediately forwards it to <a href="https://platform.deepseek.com" target="_blank" rel="noopener">DeepSeek</a> (our AI provider) to produce a response.</p>
+    <ul>
+        <li><strong>We do not store this text on our servers</strong> — it lives in memory only for the few seconds it takes to round-trip the API call, then it is discarded.</li>
+        <li>DeepSeek may retain the request under their own retention policy. Review <a href="https://platform.deepseek.com" target="_blank" rel="noopener">DeepSeek's privacy policy</a> before pasting anything sensitive.</li>
+        <li><strong>Do not paste passwords, government ID numbers, payment-card data, classified information, attorney–client privileged content, or protected health information.</strong></li>
+    </ul>
+
+    <h3>2.2 Anonymous product analytics</h3>
+    <p>To understand which templates are useful and roughly how many people visit (so we can decide where to invest engineering time), the front-end fires small events to our <code>/api/track</code> endpoint, which writes <strong>aggregate counters</strong> into <a href="https://upstash.com" target="_blank" rel="noopener">Upstash Redis</a>. We record:</p>
+    <table>
+        <thead>
+            <tr><th>What</th><th>Example</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Event type</td>
+                <td><code>page_view</code>, <code>template_select</code>, <code>generate</code>, <code>copy_used</code>, <code>reset_choice</code>, <code>generate_error</code> …</td>
+                <td>Understand which features actually get used.</td>
+            </tr>
+            <tr>
+                <td>Template name</td>
+                <td><code>essay_argumentative</code>, <code>cover_letter_professional</code>, …</td>
+                <td>See which templates are popular so we can improve them.</td>
+            </tr>
+            <tr>
+                <td>UV (unique visitor) estimate</td>
+                <td>A random UUID stored in your browser's <code>localStorage</code> under key <code>cd_vid</code> — written into a Redis HyperLogLog, which only stores a probabilistic count, <strong>not the IDs themselves</strong>.</td>
+                <td>Estimate daily unique visitors without tracking individuals.</td>
+            </tr>
+            <tr>
+                <td>Browser meta on first page view</td>
+                <td>User-Agent, screen size, language, referrer (truncated to 200 chars)</td>
+                <td>Sent for diagnostic logging only; not persisted to Redis hashes.</td>
+            </tr>
+        </tbody>
+    </table>
+    <p>None of these counters contain the text you typed, your name, your email, your IP, or any other content from your documents.</p>
+
+    <h3>2.3 Browser-local preferences (LocalStorage)</h3>
+    <p>The Service writes the following keys to your browser's <code>localStorage</code> — they <strong>never leave your device</strong>:</p>
+    <ul>
+        <li><code>cd_vid</code> — a random UUID used for the anonymous UV count above.</li>
+        <li><code>cd_template_stats</code> — your local usage counts, so the "Welcome back, continue with X?" prompt can show your last template.</li>
+        <li><code>cd_aidb_dismiss_until</code> — a timestamp so the AI disclaimer banner stays dismissed for 7 days after you close it.</li>
+        <li><code>cd_admin_token</code> — <em>only</em> set on <code>/stats.html</code> when the site operator logs in.</li>
+    </ul>
+    <p>You can wipe all of these any time via your browser's "Clear site data" feature.</p>
+
+    <h3>2.4 Server-side logs</h3>
+    <p>Vercel (our host) automatically records standard HTTP access logs (timestamp, path, status code, IP, User-Agent) for every request, the same as any web server. These logs are accessible only to the operator, retained per Vercel's defaults, and used only for debugging and abuse prevention. See <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's privacy policy</a>.</p>
+
+    <h3>2.5 The Contact form (only if you use it)</h3>
+    <p>If you submit the feedback form, your message — and your name and (optional) email — is sent to <a href="https://formspree.io" target="_blank" rel="noopener">Formspree</a>, which forwards it to the operator by email. We only see what you voluntarily type into that form.</p>
+
+    <!-- ============================================================ -->
+    <h2>3. Data we do <em>not</em> collect</h2>
+    <div class="ok-callout">
+        <ul style="margin:0;">
+            <li>❌ No user accounts, no usernames, no passwords.</li>
+            <li>❌ <strong>No persistent storage of your input or generated documents</strong> on our servers — close the tab and it's gone.</li>
+            <li>❌ No email address required for the Builder (only optional in the Contact form so we can reply).</li>
+            <li>❌ No advertising or tracking cookies, no third-party trackers (no Google Analytics, no Facebook Pixel, no Hotjar, etc.).</li>
+            <li>❌ No fingerprinting (no canvas/audio/font fingerprinting).</li>
+            <li>❌ No selling, renting, or "sharing" of personal data with brokers or ad networks.</li>
+            <li>❌ No biometric, health, or financial data collection.</li>
+        </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>4. Third-party services we rely on</h2>
+    <p>We use the minimum set of vendors needed to deliver the Service. Each one only receives the specific data described below.</p>
+    <table>
+        <thead>
+            <tr><th>Vendor</th><th>What it does</th><th>What it receives</th><th>Their policy</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>DeepSeek</strong></td>
+                <td>Runs the AI model that writes your documents.</td>
+                <td>The text you paste into the Builder, plus the template prompt.</td>
+                <td><a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a></td>
+            </tr>
+            <tr>
+                <td><strong>Vercel</strong></td>
+                <td>Hosts the website and runs the Serverless Functions.</td>
+                <td>Standard HTTP access logs (IP, UA, path, status).</td>
+                <td><a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">vercel.com/legal/privacy-policy</a></td>
+            </tr>
+            <tr>
+                <td><strong>Upstash Redis</strong></td>
+                <td>Stores aggregate, anonymous event counters for our internal stats dashboard.</td>
+                <td>Event names, template names, anonymous UV UUIDs (via HyperLogLog).</td>
+                <td><a href="https://upstash.com/trust/privacy.pdf" target="_blank" rel="noopener">upstash.com/trust/privacy.pdf</a></td>
+            </tr>
+            <tr>
+                <td><strong>Formspree</strong></td>
+                <td>Delivers Contact-form messages to the operator by email — <em>only</em> when you actively submit the form.</td>
+                <td>Whatever you type into the form (name, optional email, message).</td>
+                <td><a href="https://formspree.io/legal/privacy-policy" target="_blank" rel="noopener">formspree.io/legal/privacy-policy</a></td>
+            </tr>
+            <tr>
+                <td><strong>jsDelivr / cdnjs / unpkg</strong></td>
+                <td>Serve open-source JavaScript libraries (Chart.js, jsPDF, html2canvas, docx) from public CDNs.</td>
+                <td>Standard CDN request metadata (IP, UA).</td>
+                <td>See each CDN's site.</td>
+            </tr>
+            <tr>
+                <td><strong>Pixabay CDN</strong></td>
+                <td>Serves the (muted-by-default) background music tracks.</td>
+                <td>Only contacted if you actively press Play on the music widget.</td>
+                <td><a href="https://pixabay.com/service/privacy/" target="_blank" rel="noopener">pixabay.com/service/privacy</a></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ============================================================ -->
+    <h2>5. Your rights</h2>
+    <p>Because we don't store your input text or any account, there is usually nothing to "delete" — closing the tab already accomplishes that. For everything else (the anonymous counters, server logs, Formspree submissions, browser <code>localStorage</code>) you can:</p>
+    <ul>
+        <li><strong>See what's on your device:</strong> open browser DevTools → Application → Local Storage to inspect every key we set.</li>
+        <li><strong>Wipe local data:</strong> use your browser's "Clear site data for this site" feature, or open <code>localStorage.clear()</code> in DevTools. This resets your anonymous UV ID, the welcome-back prompt, and the dismissed-banner state.</li>
+        <li><strong>Ask us to remove a Contact-form submission</strong> or query what we hold: submit a request via the <a href="../index.html#contact">Contact form</a>; we'll respond within 30 days.</li>
+        <li><strong>Object to anonymous analytics:</strong> use any standard browser extension that blocks <code>/api/track</code>, or visit with JavaScript disabled. The Builder will still load, but the analytics ping will not be sent. (Note: blocking <code>/api/track</code> does <em>not</em> affect document generation; that uses a separate endpoint.)</li>
+    </ul>
+    <p>Depending on your jurisdiction (e.g. GDPR in the EEA/UK, CCPA in California), you may have additional rights such as access, rectification, portability, restriction, and the right to lodge a complaint with a supervisory authority. We honour these — contact us via the Contact form.</p>
+
+    <!-- ============================================================ -->
+    <h2>6. Children's privacy</h2>
+    <div class="callout">
+        🔞 <strong>The Service is intended for users aged 18 and over</strong>, consistent with the age notice shown on the home page and in the Terms of Service.
+    </div>
+    <p>We do not knowingly collect any information from children under 13 (or the equivalent minimum age under your local law, e.g. 16 in the EU under GDPR-K). Minors between the minimum age and 18 must have verifiable parent or guardian involvement, and a parent/guardian must review every AI-generated document before submission.</p>
+    <p>If you are a parent or guardian and believe your child has provided us with information through the Contact form, please contact us via the <a href="../index.html#contact">Contact form</a> and we will delete it promptly.</p>
+
+    <!-- ============================================================ -->
+    <h2>7. Security</h2>
+    <p>All traffic is served over HTTPS (HSTS preloaded). API endpoints set strict CSP, X-Frame-Options DENY, Permissions-Policy and Referrer-Policy headers. The stats dashboard is password-gated and not indexed by search engines. That said, no system is perfectly secure — please do not paste sensitive data into the Builder.</p>
+
+    <!-- ============================================================ -->
+    <h2>8. International transfers</h2>
+    <p>Our vendors (Vercel, DeepSeek, Upstash, Formspree, the CDNs) operate globally and may process data outside your country of residence. By using the Service you acknowledge this transfer.</p>
+
+    <!-- ============================================================ -->
+    <h2>9. Updates to this policy</h2>
+    <p>If we materially change how we handle data, we will update the <em>Effective date</em> at the top of this page and, where appropriate, highlight the change on the home page. Continued use of the Service after the change constitutes acceptance.</p>
+
+    <!-- ============================================================ -->
+    <h2>10. Contact</h2>
+    <p>Privacy questions, deletion requests, or general data-protection enquiries: please use the <a href="https://effortlessdoc.com/#contact">Contact form</a> on the main site. We aim to reply within 30 days.</p>
+
+    <p style="margin-top:40px;opacity:0.6;font-size:13px;text-align:center;">
+        © 2025 CraftDoc · effortlessdoc.com · This document is provided for transparency and does not constitute legal advice.
+    </p>
+</div>
+
+</body>
+</html>

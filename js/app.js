@@ -94,15 +94,18 @@
     // Auto-select if only one template
     if (doc.templates.length === 1 && !state.template) {
       state.template = doc.templates[0].id;
+      sendEvent({ event: 'template_select', template: state.template });
     }
     for (const tpl of doc.templates) {
       const card = el('button', {
         class: 'pick-card template-card' + (state.template === tpl.id ? ' active' : ''),
         attrs: { type: 'button' },
         onclick: () => {
+          const prev = state.template;
           state.template = tpl.id;
           renderStep3();
           updateGenerateState();
+          if (prev !== state.template) sendEvent({ event: 'template_select', template: state.template });
         }
       });
       card.appendChild(el('div', { class: 'tpl-title', text: tpl.label }));
@@ -169,6 +172,8 @@
       setTimeout(() => $('#output-section').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     } catch (err) {
       showToast('⚠ ' + err.message, 'err');
+      // Server-side error count (no PII / no error text)
+      sendEvent({ event: 'generate_error', mode, template: state.template });
     } finally {
       state.busy = false;
       setLoading(false, mode);
@@ -272,61 +277,83 @@
 
   function setupResetMenu() {
     const btn  = $('#btn-reset');
-    const menu = $('#reset-menu');
-    if (!btn || !menu) return;
+    if (!btn) return;
 
-    const wrap = btn.closest('.reset-wrap') || btn.parentElement;
-    let closeTimer = null;
+    // Remove the old inline menu (we replace it with a centered modal dialog)
+    const oldMenu = $('#reset-menu');
+    if (oldMenu) oldMenu.remove();
 
-    const openMenu  = () => { clearTimeout(closeTimer); menu.hidden = false; };
-    const closeMenu = () => { menu.hidden = true; };
-    const scheduleClose = () => {
-      clearTimeout(closeTimer);
-      closeTimer = setTimeout(closeMenu, 300); // 300ms grace period
+    // Build modal dialog (once)
+    let overlay = $('#reset-dialog-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'reset-dialog-overlay';
+      overlay.className = 'reset-dialog-overlay';
+      overlay.hidden = true;
+      overlay.innerHTML = `
+        <div class="reset-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title">
+          <div class="reset-dialog-header">
+            <h3 id="reset-dialog-title">🔄 Reset content</h3>
+            <button type="button" class="reset-dialog-close" aria-label="Close">✕</button>
+          </div>
+          <p class="reset-dialog-hint">Choose what to clear:</p>
+          <div class="reset-dialog-actions">
+            <button type="button" class="reset-opt" data-reset="input">
+              <span class="opt-title">Clear my input only</span>
+              <span class="opt-desc">Keep the generated document</span>
+            </button>
+            <button type="button" class="reset-opt" data-reset="output">
+              <span class="opt-title">Clear generated document only</span>
+              <span class="opt-desc">Keep what you typed</span>
+            </button>
+            <button type="button" class="reset-opt reset-opt-danger" data-reset="all">
+              <span class="opt-title">Clear everything (start over)</span>
+              <span class="opt-desc">Reset both input and output</span>
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    const closeDialog = () => { overlay.hidden = true; };
+    const openDialog  = () => {
+      overlay.hidden = false;
+      sendEvent({ event: 'reset_opened' });
     };
 
-    // Hover open (desktop) — opens on button hover, stays open over menu
-    if (wrap) {
-      wrap.addEventListener('mouseenter', openMenu);
-      wrap.addEventListener('mouseleave', scheduleClose);
-    }
-    menu.addEventListener('mouseenter', openMenu);
-    menu.addEventListener('mouseleave', scheduleClose);
-
-    // Click toggle (works for touch/mobile and explicit clicks)
+    // Open on Reset button click
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      clearTimeout(closeTimer);
-      menu.hidden = !menu.hidden;
+      openDialog();
     });
 
-    // Prevent menu clicks from bubbling to document handler
-    menu.addEventListener('click', (e) => { e.stopPropagation(); });
+    // Close on overlay click (clicking outside the dialog box)
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeDialog();
+    });
 
-    // Handle option clicks
-    menu.querySelectorAll('button[data-reset]').forEach(b => {
+    // Close on the ✕ button
+    overlay.querySelector('.reset-dialog-close').addEventListener('click', closeDialog);
+
+    // Map dialog scopes → analytics choice names (per spec: all | text | template)
+    const SCOPE_TO_CHOICE = { all: 'all', input: 'text', output: 'template' };
+
+    // Handle the three option buttons
+    overlay.querySelectorAll('button[data-reset]').forEach(b => {
       b.addEventListener('click', (e) => {
         e.stopPropagation();
-        clearTimeout(closeTimer);
-        menu.hidden = true;
-        performReset(b.getAttribute('data-reset'));
+        closeDialog();
+        const scope = b.getAttribute('data-reset');
+        const choice = SCOPE_TO_CHOICE[scope] || scope;
+        sendEvent({ event: 'reset_choice', choice });
+        performReset(scope);
       });
-    });
-
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-      if (menu.hidden) return;
-      if (btn.contains(e.target) || menu.contains(e.target)) return;
-      clearTimeout(closeTimer);
-      menu.hidden = true;
     });
 
     // Close on Escape
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        clearTimeout(closeTimer);
-        menu.hidden = true;
-      }
+      if (e.key === 'Escape' && !overlay.hidden) closeDialog();
     });
   }
 
@@ -336,6 +363,7 @@
     if (!btn) return;
     btn.addEventListener('click', async () => {
       if (!state.lastOutput.trim()) return;
+      sendEvent({ event: 'copy_used', template: state.template, mode: 'copy' });
       try {
         await navigator.clipboard.writeText(state.lastOutput);
         showToast('📋 Full document copied to clipboard!', 'ok');
@@ -407,7 +435,56 @@
     if (bar) bar.style.display = 'none';
   }
 
-  // ---- Lightweight template usage analytics (localStorage only, no server) ----
+  // ---- Visitor ID (stable per-browser UUID for UV estimation) ----
+  function getVisitorId() {
+    try {
+      let vid = localStorage.getItem('cd_vid');
+      if (!vid) {
+        // RFC4122-ish v4 UUID; fall back to a random hex string if crypto.randomUUID is missing
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          vid = window.crypto.randomUUID();
+        } else {
+          const b = new Uint8Array(16);
+          (window.crypto || { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256); } })
+            .getRandomValues(b);
+          b[6] = (b[6] & 0x0f) | 0x40;
+          b[8] = (b[8] & 0x3f) | 0x80;
+          const h = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+          vid = `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+        }
+        localStorage.setItem('cd_vid', vid);
+      }
+      return vid;
+    } catch {
+      return null;
+    }
+  }
+
+  // ---- Server-side event ingest (silent, non-blocking) ----
+  // Sends to /api/track via sendBeacon (works on pagehide too) with fetch+keepalive fallback.
+  function sendEvent(payload) {
+    try {
+      const body = JSON.stringify(Object.assign({ visitor_id: getVisitorId() }, payload));
+      const url  = '/api/track';
+      if (navigator.sendBeacon) {
+        const blob = new Blob([body], { type: 'application/json' });
+        const ok = navigator.sendBeacon(url, blob);
+        if (ok) return;
+      }
+      // Fallback — keepalive allows it to outlive a navigation
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+        credentials: 'same-origin'
+      }).catch(() => {});
+    } catch {}
+  }
+
+  // ---- Template usage analytics ----
+  //   • Keeps writing to localStorage (used by setupLastTemplateResume "welcome back" prompt) — DO NOT REMOVE.
+  //   • Additionally fires a server-side event to /api/track for the dashboard.
   function trackTemplateUse(template, mode) {
     try {
       const raw = localStorage.getItem('cd_template_stats') || '{}';
@@ -417,6 +494,8 @@
       stats._lastUse = { template, mode, at: Date.now() };
       localStorage.setItem('cd_template_stats', JSON.stringify(stats));
     } catch {}
+    // Server-side (silent)
+    sendEvent({ event: mode, template, mode });
   }
 
   // ---- Remember-last-template prompt ("continue where you left off?") ----
@@ -482,6 +561,21 @@
 
   // ---- Init ----
   function init() {
+    // Fire page_view ASAP so we still record a hit if the user bounces immediately.
+    try {
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      sendEvent({
+        event: 'page_view',
+        meta: {
+          ua: (navigator.userAgent || '').slice(0, 200),
+          screen: (window.screen ? `${window.screen.width}x${window.screen.height}` : ''),
+          referrer: (document.referrer || '').slice(0, 200),
+          lang: navigator.language || '',
+          isMobile
+        }
+      });
+    } catch {}
+
     renderStep1();
     renderStep2();
     renderStep3();
@@ -540,4 +634,30 @@
 
     // Constrain Ctrl/Cmd+A to the textarea or output card when focused inside them
     document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key ==
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+        const inside = e.target.closest('#output-card, #user-input');
+        if (inside) {
+          // Let the browser do native select-all within the focused field/card
+          // (no preventDefault) — but stop bubbling so Edge doesn't grab the whole page.
+          e.stopPropagation();
+        }
+      }
+    }, true);
+
+    // Make output-card user-selectable & focusable so Ctrl+A works inside it
+    const outCard = $('#output-card');
+    if (outCard) {
+      outCard.setAttribute('tabindex', '0');
+      outCard.style.userSelect = 'text';
+    }
+
+    // Welcome-back prompt (must be last, after step renderers are ready)
+    setupLastTemplateResume();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
