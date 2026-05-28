@@ -218,7 +218,7 @@
     t._tm = setTimeout(() => t.classList.remove('show'), 3500);
   }
 
-  // ---- Formspree submit (Contact) ----
+    // ---- Web3Forms submit (Contact) ----
   async function handleContactSubmit(e) {
     e.preventDefault();
     const form = e.target;
@@ -226,12 +226,14 @@
     status.textContent = 'Sending…';
     status.className = 'contact-status';
     try {
+      const data = Object.fromEntries(new FormData(form));
       const resp = await fetch(form.action, {
         method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        body: new FormData(form)
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data)
       });
-      if (resp.ok) {
+      const result = await resp.json();
+      if (resp.ok && result.success) {
         status.textContent = "Thanks! We'll get back to you within 24 hours.";
         status.classList.add('ok');
         form.reset();
@@ -244,7 +246,7 @@
       status.classList.add('err');
     }
   }
-
+  
   // ---- Reset menu ----
   function performReset(scope) {
     if (scope === 'input' || scope === 'all') {
